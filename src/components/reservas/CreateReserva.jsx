@@ -25,9 +25,15 @@ export function CreateReserva() {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (response.status == 200) {
-        console.log(response.data);
-        setAllCanchas(response.data);
+
+      if (response.status === 200) {
+        // Filtra las canchas que no están en mantenimiento
+        const canchasDisponibles = response.data.filter(
+          (cancha) => cancha.estado_actual !== "En Mantenimiento"
+        );
+
+        console.log(canchasDisponibles);
+        setAllCanchas(canchasDisponibles); // Asigna las canchas filtradas
       }
     } catch (error) {
       console.error("Error al obtener registros:", error);
@@ -52,8 +58,8 @@ export function CreateReserva() {
 
   const onSubmit = handleSubmit(async (data) => {
     setIsLoading(true);
-    console.log(data)
-    
+    console.log(data);
+
     const response = await toast.promise(
       client.post(
         "reservas/",
