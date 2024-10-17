@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from "react";
-import RESERVASIMAGE from "../../assets/RESERVASIMAGE.png";
+import MANTENIMIENTOCANCHA from "../../assets/MANTENIMIENTOCANCHA.jpg";
 import client from "../../api/login";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
-export function CreateReserva() {
+export function EditMantenimiento() {
   const token = localStorage.getItem("token");
   const [isLoading, setIsLoading] = useState(false);
   const [allCanchas, setAllCanchas] = useState([]);
+  const [mantenimiento, setMantenimiento] = useState([]);
   const [informationUser, setInformationUser] = useState([]);
+  const { id } = useParams();
 
   const {
     register,
@@ -34,6 +36,22 @@ export function CreateReserva() {
     }
   };
 
+  const getMantenimiento = async () => {
+    try {
+      const response = await client.get(`mantenimiento/${id}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.status == 200) {
+        console.log(response.data);
+        setMantenimiento(response.data);
+      }
+    } catch (error) {
+      console.error("Error al obtener registros:", error);
+    }
+  };
+
   const getDatosMe = async () => {
     try {
       const response = await client.get("auth/me/", {
@@ -52,14 +70,13 @@ export function CreateReserva() {
 
   const onSubmit = handleSubmit(async (data) => {
     setIsLoading(true);
-    console.log(data)
-    
+
     const response = await toast.promise(
-      client.post(
-        "reservas/",
+      client.put(
+        `mantenimiento/${id}/`,
         {
-          hora_inicio: data.hora,
-          id_usuario: informationUser.id,
+          fecha: data.fecha,
+          descripcion: data.description,
           id_cancha: parseInt(data.cancha, 10),
         },
         {
@@ -69,8 +86,8 @@ export function CreateReserva() {
         }
       ),
       {
-        loading: "Creando reserva...",
-        success: "Reservada creada correctamente!",
+        loading: "Actualizando mantenimiento...",
+        success: "Mantenimiento Actualizado correctamente!",
         error: (error) => {
           const errorMessage =
             error.response?.data?.message ||
@@ -88,12 +105,13 @@ export function CreateReserva() {
   useEffect(() => {
     getDatos();
     getDatosMe();
+    getMantenimiento();
   }, []);
 
   return (
     <div className="w-full">
       <div className="">
-        <Link to="/dashboard/reservas/view">
+        <Link to="/dashboard/mantenimiento/view">
           <button
             className="bg-indigo-600 text-center w-40 rounded-2xl h-12 relative text-black text-xl font-semibold group"
             type="button"
@@ -121,7 +139,9 @@ export function CreateReserva() {
       </div>
       <div className="flex w-full flex-col items-center justify-between p-6">
         <div className="mb-10">
-          <p className="font-bold text-4xl text-indigo-600">Creando reserva</p>
+          <p className="font-bold text-4xl text-indigo-600">
+            Agendando mantenimiento
+          </p>
         </div>
         <form
           onSubmit={onSubmit}
@@ -130,15 +150,16 @@ export function CreateReserva() {
           <div className="w-full lg:w-1/2 lg:pr-8 lg:border-r-2 lg:border-slate-300">
             <div className="mb-4">
               <label className="text-neutral-800 font-bold text-sm mb-2 block">
-                Hora del partido:
+                Fecha del mantenimiento:
               </label>
               <input
-                type="time"
-                name="hora"
+                type="date"
+                name="fecha"
+                defaultValue={mantenimiento.fecha}
                 className="peer w-full bg-transparent text-blue-gray-700 font-sans font-normal outline outline-0 focus:outline-0 disabled:bg-blue-gray-50 disabled:border-0 disabled:cursor-not-allowed transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 border focus:border-2 placeholder:opacity-0 focus:placeholder:opacity-100 text-sm px-3 py-3 rounded-md border-blue-gray-200 focus:border-gray-900"
-                {...register("hora", { required: true })}
+                {...register("fecha", { required: true })}
               />
-              {errors.hora && (
+              {errors.fecha && (
                 <span className="flex text-red-600 text-[10px] font-semibold ml-2 sm:text-[12px] md:text-[13px] lg:text-[10px] xl:text-[12px] 2xl:text-[14px]">
                   Este campo es requerido
                 </span>
@@ -155,7 +176,12 @@ export function CreateReserva() {
                 placeholder=""
                 {...register("cancha", { required: true })}
               >
-                <option value=""></option>
+                {mantenimiento.id_cancha &&
+                  mantenimiento.id_cancha.id_cancha && (
+                    <option value={mantenimiento.id_cancha.id_cancha}>
+                      {mantenimiento.id_cancha.nombre}
+                    </option>
+                  )}
                 {allCanchas.map((cancha, index) => (
                   <option key={index} value={cancha.id_cancha}>
                     {cancha.nombre}
@@ -168,12 +194,29 @@ export function CreateReserva() {
                 </span>
               )}
             </div>
+            <div className="mb-4">
+              <label className="text-neutral-800 font-bold text-sm mb-2 block">
+                Descripcion:
+              </label>
+              <textarea
+                type="text"
+                name="description"
+                defaultValue={mantenimiento.descripcion}
+                className="peer w-full bg-transparent text-blue-gray-700 font-sans font-normal outline outline-0 focus:outline-0 disabled:bg-blue-gray-50 disabled:border-0 disabled:cursor-not-allowed transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 border focus:border-2 placeholder:opacity-0 focus:placeholder:opacity-100 text-sm px-3 py-3 rounded-md border-blue-gray-200 focus:border-gray-900"
+                {...register("description", { required: true })}
+              />
+              {errors.description && (
+                <span className="flex text-red-600 text-[10px] font-semibold ml-2 sm:text-[12px] md:text-[13px] lg:text-[10px] xl:text-[12px] 2xl:text-[14px]">
+                  Este campo es requerido
+                </span>
+              )}
+            </div>
             <div className="w-full flex gap-4">
               <button
                 className="align-middle select-none font-sans font-bold text-center uppercase transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 px-6 rounded-lg bg-gray-900 text-white shadow-md shadow-gray-900/10 hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none block w-full mt-6"
                 type="submit"
               >
-                Crear
+                Actualizar
               </button>
               <button
                 onClick={() => reset()}
@@ -192,7 +235,7 @@ export function CreateReserva() {
               >
                 <div className="w-full h-56 m-auto rounded-xl text-white shadow-2xl absolute">
                   <img
-                    src={RESERVASIMAGE}
+                    src={MANTENIMIENTOCANCHA}
                     className="relative object-cover w-full h-full rounded-xl"
                   />
                 </div>

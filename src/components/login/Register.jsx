@@ -1,6 +1,45 @@
-import { Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+import { Link, useNavigate } from "react-router-dom";
+import client from "../../api/login";
 
 export function Register() {
+  const navigate = useNavigate();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+
+  const onSubmit = handleSubmit(async (data) => {
+    console.log(data);
+
+    if (data.password != data.passwordConfirmation) {
+      return toast.error("Las contraseñas no coinciden");
+    }
+
+    const response = await toast.promise(
+      client.post("auth/register/", {
+        username: data.username,
+        password: data.password,
+        is_staff: true,
+        is_superuser: false,
+      }),
+      {
+        loading: "Creando...",
+        success: "Creado correctamente!",
+        error: (error) => {
+          const errorMessage =
+            error.response?.data?.message || "Error en la solicitud";
+          return <b>{errorMessage}</b>;
+        },
+      }
+    );
+
+    navigate("/");
+  });
+
   return (
     <div>
       <div className="text-center">
@@ -11,8 +50,7 @@ export function Register() {
       <div className="flex mt-6 items-center justify-center space-x-2">
         <span className="h-px w-32 bg-gray-200"></span>
       </div>
-      <form className="mt-8 space-y-6" action="#" method="POST">
-        <input type="hidden" name="remember" />
+      <form onSubmit={onSubmit} className="mt-8 space-y-6">
         <div className="relative">
           <div className="absolute right-3 mt-4"></div>
           <label className="ml-3 text-sm font-bold text-gray-700 tracking-wide">
@@ -22,7 +60,13 @@ export function Register() {
             className=" w-full text-base px-4 py-2 border-b border-gray-300 focus:outline-none rounded-2xl focus:border-indigo-500"
             type=""
             placeholder="Nombre completo"
+            {...register("username", { required: true })}
           />
+          {errors.username && (
+            <span className="flex text-red-600 text-[10px] font-semibold ml-2 sm:text-[12px] md:text-[13px] lg:text-[10px] xl:text-[12px] 2xl:text-[14px]">
+              Este campo es requerido
+            </span>
+          )}
         </div>
         <div className="mt-8 content-center">
           <label className="ml-3 text-sm font-bold text-gray-700 tracking-wide">
@@ -30,9 +74,15 @@ export function Register() {
           </label>
           <input
             className="w-full content-center text-base px-4 py-2 border-b rounded-2xl border-gray-300 focus:outline-none focus:border-indigo-500"
-            type=""
+            type="password"
             placeholder="Ingrese su contraseña"
+            {...register("password", { required: true })}
           />
+          {errors.password && (
+            <span className="flex text-red-600 text-[10px] font-semibold ml-2 sm:text-[12px] md:text-[13px] lg:text-[10px] xl:text-[12px] 2xl:text-[14px]">
+              Este campo es requerido
+            </span>
+          )}
         </div>
         <div className="mt-8 content-center">
           <label className="ml-3 text-sm font-bold text-gray-700 tracking-wide">
@@ -40,9 +90,15 @@ export function Register() {
           </label>
           <input
             className="w-full content-center text-base px-4 py-2 border-b rounded-2xl border-gray-300 focus:outline-none focus:border-indigo-500"
-            type=""
+            type="password"
             placeholder="Verifique du contraseña"
+            {...register("passwordConfirmation", { required: true })}
           />
+          {errors.passwordConfirmation && (
+            <span className="flex text-red-600 text-[10px] font-semibold ml-2 sm:text-[12px] md:text-[13px] lg:text-[10px] xl:text-[12px] 2xl:text-[14px]">
+              Este campo es requerido
+            </span>
+          )}
         </div>
         <div>
           <button

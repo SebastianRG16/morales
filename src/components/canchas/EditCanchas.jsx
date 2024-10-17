@@ -1,14 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import CANCHACREATE from "../../assets/CANCHACREATE.jpg";
 import toast from "react-hot-toast";
 import client from "../../api/login";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 
-export function CreateCancha() {
+export function EditCanchas() {
   const [isLoading, setIsLoading] = useState(false);
+  const [allCanchas, setAllCanchas] = useState([]);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+  const { id } = useParams();
 
   const {
     register,
@@ -25,8 +27,8 @@ export function CreateCancha() {
     console.log(data);
 
     const response = await toast.promise(
-      client.post(
-        "canchas/",
+      client.put(
+        `canchas/${id}/`,
         {
           nombre: data.name,
           barrio: data.address,
@@ -40,8 +42,8 @@ export function CreateCancha() {
         }
       ),
       {
-        loading: "Creando cancha...",
-        success: "Cancha creada correctamente!",
+        loading: "Actualizando cancha...",
+        success: "Cancha actualizada correctamente!",
         error: (error) => {
           const errorMessage =
             error.response?.data?.message || "Error creando cancha";
@@ -55,12 +57,32 @@ export function CreateCancha() {
     setIsLoading(false);
   });
 
+  const getDatos = async () => {
+    try {
+      const response = await client.get(`canchas/${id}/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.status === 200) {
+        console.log(response.data);
+        setAllCanchas(response.data);
+      }
+    } catch (error) {
+      console.error("Error al obtener registros:", error);
+    }
+  };
+
+  useEffect(() => {
+    getDatos();
+  }, []);
+
   return (
     <section className="w-full">
       <div className="mb-4">
         <Link to="/dashboard/canchas/view">
           <button
-            className="bg-indigo-600 text-center w-40 rounded-2xl h-12 relative text-black text-xl font-semibold group"
+            class="bg-indigo-600 text-center w-40 rounded-2xl h-12 relative text-black text-xl font-semibold group"
             type="button"
           >
             <div className="bg-indigo-200 rounded-xl h-10 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[152px] z-10 duration-500">
@@ -93,11 +115,10 @@ export function CreateCancha() {
         <div className="absolute inset-0 h-full w-full rounded-lg bg-black/50"></div>
         <div className="relative pt-28 text-center">
           <h2 className="block antialiased tracking-normal font-sans font-semibold leading-[1.3] text-white mb-4 text-3xl lg:text-4xl">
-            Agregando cancha
+            Editando cancha
           </h2>
           <p className="block antialiased font-sans text-xl font-normal leading-relaxed text-white mb-9 opacity-70">
-            Por favor ingrese todos los datos pedidos para crear su nueva cancha
-            y que pueda empezar a gestionarla
+            Por favor modifique los datos que desee cambiar de la cancha actual
           </p>
         </div>
       </div>
@@ -187,6 +208,7 @@ export function CreateCancha() {
                         name="Name"
                         className="peer w-full h-full bg-transparent text-blue-gray-700 font-sans font-normal outline outline-0 focus:outline-0 disabled:bg-blue-gray-50 disabled:border-0 disabled:cursor-not-allowed transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 border focus:border-2 border-t-transparent focus:border-t-transparent placeholder:opacity-0 focus:placeholder:opacity-100 text-sm px-3 py-3 rounded-md border-blue-gray-200 focus:border-gray-900"
                         placeholder=""
+                        defaultValue={allCanchas.nombre}
                         {...register("name", { required: true })}
                       />
                       <label className="flex w-full h-full select-none pointer-events-none absolute left-0 font-normal !overflow-visible truncate peer-placeholder-shown:text-blue-gray-500 leading-tight peer-focus:leading-tight peer-disabled:text-transparent peer-disabled:peer-placeholder-shown:text-blue-gray-500 transition-all -top-1.5 peer-placeholder-shown:text-sm text-[11px] peer-focus:text-[11px] before:content[&#x27; &#x27;] before:block before:box-border before:w-2.5 before:h-1.5 before:mt-[6.5px] before:mr-1 peer-placeholder-shown:before:border-transparent before:rounded-tl-md before:border-t peer-focus:before:border-t-2 before:border-l peer-focus:before:border-l-2 before:pointer-events-none before:transition-all peer-disabled:before:border-transparent after:content[&#x27; &#x27;] after:block after:flex-grow after:box-border after:w-2.5 after:h-1.5 after:mt-[6.5px] after:ml-1 peer-placeholder-shown:after:border-transparent after:rounded-tr-md after:border-t peer-focus:after:border-t-2 after:border-r peer-focus:after:border-r-2 after:pointer-events-none after:transition-all peer-disabled:after:border-transparent peer-placeholder-shown:leading-[4.1] text-gray-500 peer-focus:text-gray-900 before:border-blue-gray-200 peer-focus:before:!border-gray-900 after:border-blue-gray-200 peer-focus:after:!border-gray-900">
@@ -206,6 +228,7 @@ export function CreateCancha() {
                         name="address"
                         className="peer w-full h-full bg-transparent text-blue-gray-700 font-sans font-normal outline outline-0 focus:outline-0 disabled:bg-blue-gray-50 disabled:border-0 disabled:cursor-not-allowed transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 border focus:border-2 border-t-transparent focus:border-t-transparent placeholder:opacity-0 focus:placeholder:opacity-100 text-sm px-3 py-3 rounded-md border-blue-gray-200 focus:border-gray-900"
                         placeholder=" "
+                        defaultValue={allCanchas.barrio}
                         {...register("address", { required: true })}
                       />
                       <label className="flex w-full h-full select-none pointer-events-none absolute left-0 font-normal !overflow-visible truncate peer-placeholder-shown:text-blue-gray-500 leading-tight peer-focus:leading-tight peer-disabled:text-transparent peer-disabled:peer-placeholder-shown:text-blue-gray-500 transition-all -top-1.5 peer-placeholder-shown:text-sm text-[11px] peer-focus:text-[11px] before:content[&#x27; &#x27;] before:block before:box-border before:w-2.5 before:h-1.5 before:mt-[6.5px] before:mr-1 peer-placeholder-shown:before:border-transparent before:rounded-tl-md before:border-t peer-focus:before:border-t-2 before:border-l peer-focus:before:border-l-2 before:pointer-events-none before:transition-all peer-disabled:before:border-transparent after:content[&#x27; &#x27;] after:block after:flex-grow after:box-border after:w-2.5 after:h-1.5 after:mt-[6.5px] after:ml-1 peer-placeholder-shown:after:border-transparent after:rounded-tr-md after:border-t peer-focus:after:border-t-2 after:border-r peer-focus:after:border-r-2 after:pointer-events-none after:transition-all peer-disabled:after:border-transparent peer-placeholder-shown:leading-[4.1] text-gray-500 peer-focus:text-gray-900 before:border-blue-gray-200 peer-focus:before:!border-gray-900 after:border-blue-gray-200 peer-focus:after:!border-gray-900">
@@ -225,6 +248,7 @@ export function CreateCancha() {
                         name="price"
                         className="peer w-full h-full bg-transparent text-blue-gray-700 font-sans font-normal outline outline-0 focus:outline-0 disabled:bg-blue-gray-50 disabled:border-0 disabled:cursor-not-allowed transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 border focus:border-2 border-t-transparent focus:border-t-transparent placeholder:opacity-0 focus:placeholder:opacity-100 text-sm px-3 py-3 rounded-md border-blue-gray-200 focus:border-gray-900"
                         placeholder=" "
+                        defaultValue={allCanchas.precio_por_hora}
                         {...register("price", { required: true })}
                       />
                       <label className="flex w-full h-full select-none pointer-events-none absolute left-0 font-normal !overflow-visible truncate peer-placeholder-shown:text-blue-gray-500 leading-tight peer-focus:leading-tight peer-disabled:text-transparent peer-disabled:peer-placeholder-shown:text-blue-gray-500 transition-all -top-1.5 peer-placeholder-shown:text-sm text-[11px] peer-focus:text-[11px] before:content[&#x27; &#x27;] before:block before:box-border before:w-2.5 before:h-1.5 before:mt-[6.5px] before:mr-1 peer-placeholder-shown:before:border-transparent before:rounded-tl-md before:border-t peer-focus:before:border-t-2 before:border-l peer-focus:before:border-l-2 before:pointer-events-none before:transition-all peer-disabled:before:border-transparent after:content[&#x27; &#x27;] after:block after:flex-grow after:box-border after:w-2.5 after:h-1.5 after:mt-[6.5px] after:ml-1 peer-placeholder-shown:after:border-transparent after:rounded-tr-md after:border-t peer-focus:after:border-t-2 after:border-r peer-focus:after:border-r-2 after:pointer-events-none after:transition-all peer-disabled:after:border-transparent peer-placeholder-shown:leading-[4.1] text-gray-500 peer-focus:text-gray-900 before:border-blue-gray-200 peer-focus:before:!border-gray-900 after:border-blue-gray-200 peer-focus:after:!border-gray-900">
@@ -246,9 +270,10 @@ export function CreateCancha() {
                         placeholder=" "
                         {...register("state", { required: true })}
                       >
+                        <option value={allCanchas.estado}>{allCanchas.estado}</option>
                         <option value="DISPONIBLE">DISPONIBLE</option>
-                        <option value="DISPONIBLE">RESERVADA</option>
-                        <option value="DISPONIBLE">MANTENIMIENTO</option>
+                        <option value="RESERVADA">RESERVADA</option>
+                        <option value="MANTENIMIENTO">MANTENIMIENTO</option>
                       </select>
                       <label className="flex w-full h-full select-none pointer-events-none absolute left-0 font-normal !overflow-visible truncate peer-placeholder-shown:text-blue-gray-500 leading-tight peer-focus:leading-tight peer-disabled:text-transparent peer-disabled:peer-placeholder-shown:text-blue-gray-500 transition-all -top-1.5 peer-placeholder-shown:text-sm text-[11px] peer-focus:text-[11px] before:content[&#x27; &#x27;] before:block before:box-border before:w-2.5 before:h-1.5 before:mt-[6.5px] before:mr-1 peer-placeholder-shown:before:border-transparent before:rounded-tl-md before:border-t peer-focus:before:border-t-2 before:border-l peer-focus:before:border-l-2 before:pointer-events-none before:transition-all peer-disabled:before:border-transparent after:content[&#x27; &#x27;] after:block after:flex-grow after:box-border after:w-2.5 after:h-1.5 after:mt-[6.5px] after:ml-1 peer-placeholder-shown:after:border-transparent after:rounded-tr-md after:border-t peer-focus:after:border-t-2 after:border-r peer-focus:after:border-r-2 after:pointer-events-none after:transition-all peer-disabled:after:border-transparent peer-placeholder-shown:leading-[4.1] text-gray-500 peer-focus:text-gray-900 before:border-blue-gray-200 peer-focus:before:!border-gray-900 after:border-blue-gray-200 peer-focus:after:!border-gray-900">
                         Estado
@@ -264,7 +289,7 @@ export function CreateCancha() {
                     className="align-middle select-none font-sans font-bold text-center uppercase transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 px-6 rounded-lg bg-gray-900 text-white shadow-md shadow-gray-900/10 hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none block w-full mt-6"
                     type="submit"
                   >
-                    Crear
+                    Actualizar
                   </button>
                 </form>
               </div>

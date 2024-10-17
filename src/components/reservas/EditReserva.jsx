@@ -3,13 +3,15 @@ import RESERVASIMAGE from "../../assets/RESERVASIMAGE.png";
 import client from "../../api/login";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
-export function CreateReserva() {
+export function EditReserva() {
   const token = localStorage.getItem("token");
   const [isLoading, setIsLoading] = useState(false);
   const [allCanchas, setAllCanchas] = useState([]);
+  const [reserva, setReserva] = useState([]);
   const [informationUser, setInformationUser] = useState([]);
+  const { id } = useParams();
 
   const {
     register,
@@ -34,6 +36,22 @@ export function CreateReserva() {
     }
   };
 
+  const getReserva = async () => {
+    try {
+      const response = await client.get(`reservas/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.status == 200) {
+        console.log(response.data);
+        setReserva(response.data);
+      }
+    } catch (error) {
+      console.error("Error al obtener registros:", error);
+    }
+  };
+
   const getDatosMe = async () => {
     try {
       const response = await client.get("auth/me/", {
@@ -52,11 +70,11 @@ export function CreateReserva() {
 
   const onSubmit = handleSubmit(async (data) => {
     setIsLoading(true);
-    console.log(data)
-    
+    console.log(data);
+
     const response = await toast.promise(
-      client.post(
-        "reservas/",
+      client.put(
+        `reservas/${id}/`,
         {
           hora_inicio: data.hora,
           id_usuario: informationUser.id,
@@ -69,8 +87,8 @@ export function CreateReserva() {
         }
       ),
       {
-        loading: "Creando reserva...",
-        success: "Reservada creada correctamente!",
+        loading: "Actualizando reserva...",
+        success: "Reservada actualizada correctamente!",
         error: (error) => {
           const errorMessage =
             error.response?.data?.message ||
@@ -88,6 +106,7 @@ export function CreateReserva() {
   useEffect(() => {
     getDatos();
     getDatosMe();
+    getReserva();
   }, []);
 
   return (
@@ -121,7 +140,7 @@ export function CreateReserva() {
       </div>
       <div className="flex w-full flex-col items-center justify-between p-6">
         <div className="mb-10">
-          <p className="font-bold text-4xl text-indigo-600">Creando reserva</p>
+          <p className="font-bold text-4xl text-indigo-600">Editando reserva</p>
         </div>
         <form
           onSubmit={onSubmit}
@@ -135,6 +154,7 @@ export function CreateReserva() {
               <input
                 type="time"
                 name="hora"
+                defaultValue={reserva.hora_inicio && reserva.hora_inicio}
                 className="peer w-full bg-transparent text-blue-gray-700 font-sans font-normal outline outline-0 focus:outline-0 disabled:bg-blue-gray-50 disabled:border-0 disabled:cursor-not-allowed transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 border focus:border-2 placeholder:opacity-0 focus:placeholder:opacity-100 text-sm px-3 py-3 rounded-md border-blue-gray-200 focus:border-gray-900"
                 {...register("hora", { required: true })}
               />
@@ -155,7 +175,11 @@ export function CreateReserva() {
                 placeholder=""
                 {...register("cancha", { required: true })}
               >
-                <option value=""></option>
+                {reserva.id_cancha && reserva.id_cancha.nombre && (
+                  <option value={reserva.id_cancha.id_cancha}>
+                    {reserva.id_cancha.nombre}
+                  </option>
+                )}
                 {allCanchas.map((cancha, index) => (
                   <option key={index} value={cancha.id_cancha}>
                     {cancha.nombre}
@@ -173,7 +197,7 @@ export function CreateReserva() {
                 className="align-middle select-none font-sans font-bold text-center uppercase transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 px-6 rounded-lg bg-gray-900 text-white shadow-md shadow-gray-900/10 hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none block w-full mt-6"
                 type="submit"
               >
-                Crear
+                Actualizar
               </button>
               <button
                 onClick={() => reset()}

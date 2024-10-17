@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 
-export function CreateReserva() {
+export function CreateReservaClient() {
   const token = localStorage.getItem("token");
   const [isLoading, setIsLoading] = useState(false);
   const [allCanchas, setAllCanchas] = useState([]);
@@ -69,8 +69,8 @@ export function CreateReserva() {
         }
       ),
       {
-        loading: "Creando reserva...",
-        success: "Reservada creada correctamente!",
+        loading: "Reserva cancha...",
+        success: "Reserva creada correctamente!",
         error: (error) => {
           const errorMessage =
             error.response?.data?.message ||
@@ -93,7 +93,7 @@ export function CreateReserva() {
   return (
     <div className="w-full">
       <div className="">
-        <Link to="/dashboard/reservas/view">
+        <Link to="/client">
           <button
             className="bg-indigo-600 text-center w-40 rounded-2xl h-12 relative text-black text-xl font-semibold group"
             type="button"

@@ -3,10 +3,12 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import client from "../../api/login";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../../AuthContext";
 
 export function Signin() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const {
     register,
@@ -35,10 +37,13 @@ export function Signin() {
       }
     );
 
-    localStorage.setItem("token", response.data.access);
-    localStorage.setItem("refresh", response.data.refresh);
-    console.log(response)
-    navigate("/dashboard/canchas/view");
+    login(response.data);
+
+    if (response.data.is_superuser) {
+      navigate("/dashboard/canchas/view");
+    } else {
+      navigate("/client");
+    }
     setIsLoading(false);
   });
 
