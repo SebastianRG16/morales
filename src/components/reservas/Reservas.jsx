@@ -1,21 +1,62 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import client from "../../api/login";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+
+// Estilos para el PDF
+const styles = StyleSheet.create({
+  page: {
+    padding: 20,
+    fontFamily: "Helvetica",
+  },
+  title: {
+    fontSize: 24,
+    marginBottom: 10,
+    textAlign: "center",
+    color: "#333",
+  },
+  section: {
+    marginBottom: 10,
+    padding: 10,
+    border: "1px solid #ddd",
+    borderRadius: 5,
+  },
+  reservaName: {
+    fontSize: 16,
+    marginBottom: 5,
+    fontWeight: "bold",
+  },
+  reservaDetail: {
+    fontSize: 12,
+    color: "#555",
+  },
+});
+
+// Componente de documento PDF
+const PDFDocument = ({ reservas }) => (
+  <Document>
+    <Page size="A4" style={styles.page}>
+      <Text style={styles.title}>Reservas del Día</Text>
+      {reservas.map((reserva, index) => (
+        <View key={index} style={styles.section}>
+          <Text style={styles.reservaName}>{reserva.id_cancha.nombre}</Text>
+          <Text style={styles.reservaDetail}>
+            Usuario: {reserva.id_usuario.username}
+          </Text>
+          <Text style={styles.reservaDetail}>
+            Horario: {reserva.hora_inicio} - {reserva.hora_fin}
+          </Text>
+        </View>
+      ))}
+    </Page>
+  </Document>
+);
 
 export function Reservas() {
   const token = localStorage.getItem("token");
   const [allReservas, setAllReservas] = useState([]);
-  const options = {
-    month: "long",
-    year: "numeric",
-    timeZone: "America/Bogota",
-  };
-  const currentMonthYear = new Date().toLocaleDateString("es-ES", options);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [daysInMonth, setDaysInMonth] = useState([]);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const getDatos = async () => {
     try {
@@ -24,8 +65,7 @@ export function Reservas() {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (response.status == 200) {
-        console.log(response.data);
+      if (response.status === 200) {
         setAllReservas(response.data);
       }
     } catch (error) {
@@ -49,7 +89,7 @@ export function Reservas() {
 
     const daysArray = [];
     for (let i = 0; i < firstDayOfMonth; i++) {
-      daysArray.push(null);
+      daysArray.push(null); // Espacios vacíos para días antes del primer día del mes
     }
     for (let i = 1; i <= daysInCurrentMonth; i++) {
       daysArray.push(i);
@@ -57,12 +97,6 @@ export function Reservas() {
 
     setDaysInMonth(daysArray);
   }, []);
-
-  const handleGeneratePDF = () => {
-    setIsGeneratingPDF(true);
-    // Aquí puedes manejar la lógica de generación de PDF
-    setTimeout(() => setIsGeneratingPDF(false), 1000); // Restablece después de generar
-  };
 
   const renderCalendar = () => {
     const currentDay = currentDate.getDate();
@@ -83,24 +117,6 @@ export function Reservas() {
     ));
   };
 
-  const generatePDF = async () => {
-    await handleGeneratePDF();
-
-    const doc = new jsPDF();
-    const pdfContent = document.getElementById("reservas-content");
-
-    // Usa html2canvas para capturar la parte de las reservas
-    const canvas = await html2canvas(pdfContent);
-    const imgData = canvas.toDataURL("image/png");
-
-    // Ajusta la imagen al tamaño de la página del PDF
-    const imgWidth = 190;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    doc.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
-    doc.save("reservas.pdf");
-  };
-
   return (
     <section className="relative flex w-full">
       <div className="w-full py-6 relative z-10 backdrop-blur-3xl">
@@ -108,18 +124,22 @@ export function Reservas() {
           <div className="grid grid-cols-12 gap-8 max-w-4xl mx-auto xl:max-w-full">
             <div className="col-span-12 xl:col-span-5">
               <h2 className="font-manrope text-3xl leading-tight text-gray-900 mb-1.5">
-                Reservas del dia
+                Reservas del día
               </h2>
               <p className="text-lg font-normal text-gray-600 mb-8">
                 Estas son todas las reservas que tienes para hoy
               </p>
               <div className="flex items-center rounded-md gap-px mb-8">
-                <button
-                  onClick={generatePDF}
+                {/* Enlace para descargar el PDF */}
+                <PDFDownloadLink
+                  document={<PDFDocument reservas={allReservas} />}
+                  fileName="reservas.pdf"
                   className="py-2.5 px-5 rounded-lg bg-indigo-600 text-white text-sm font-medium transition-all duration-300 hover:bg-indigo-600 hover:text-white"
                 >
-                  Imprimir reservas
-                </button>
+                  {({ loading }) =>
+                    loading ? "Generando PDF..." : "Imprimir reservas"
+                  }
+                </PDFDownloadLink>
               </div>
               <div className="flex gap-5 flex-col" id="reservas-content">
                 {allReservas.map((reserva, index) => (
@@ -132,14 +152,12 @@ export function Reservas() {
                         </p>
                       </div>
                       <div className="dropdown relative inline-flex">
-                        {!isGeneratingPDF && (
-                          <Link
-                            to={`/dashboard/reservas/edit/${reserva.id_reserva}`}
-                            className="inline-flex text-purple-700 justify-center py-2.5 px-1 items-center gap-2 text-sm text-black rounded-full cursor-pointer font-semibold text-center shadow-xs transition-all duration-500 hover:text-purple-600"
-                          >
-                            Editar
-                          </Link>
-                        )}
+                        <Link
+                          to={`/dashboard/reservas/edit/${reserva.id_reserva}`}
+                          className="inline-flex text-purple-700 justify-center py-2.5 px-1 items-center gap-2 text-sm text-black rounded-full cursor-pointer font-semibold text-center shadow-xs transition-all duration-500 hover:text-purple-600"
+                        >
+                          Editar
+                        </Link>
                       </div>
                     </div>
                     <h6 className="text-xl leading-8 font-semibold text-black mb-1">
@@ -157,7 +175,11 @@ export function Reservas() {
               <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-5">
                 <div className="flex items-center gap-4">
                   <h5 className="text-xl leading-8 font-semibold text-gray-900 first-letter:capitalize">
-                    {currentMonthYear}
+                    {new Date().toLocaleDateString("es-ES", {
+                      month: "long",
+                      year: "numeric",
+                      timeZone: "America/Bogota",
+                    })}
                   </h5>
                 </div>
                 <div className="flex items-center rounded-md gap-px">
@@ -175,10 +197,10 @@ export function Reservas() {
                     "Domingo",
                     "Lunes",
                     "Martes",
-                    "Miercoles",
+                    "Miércoles",
                     "Jueves",
                     "Viernes",
-                    "Sabado",
+                    "Sábado",
                   ].map((day, index) => (
                     <div
                       key={index}
